@@ -54,40 +54,19 @@ class FaceRecognition:
                     number = int(filename[17:])
                 except ValueError:
                     pass
+
         number += 1
 
         fn = 'stored_faces/face' + str(number) + '.jpg'
         cv2.imwrite(fn, img)
-
-        if self.face_exist(fn):
-            print('Face already exists')
-        else:
-
-            embedding = DeepFace.represent(fn)
-
-            embedding_json = json.dumps(embedding[0])
-
-            self.cursor.execute("""
-                INSERT INTO faces VALUES (%s, %s)
-            """, (fn, embedding_json))
-            self.conn.commit()
+        self.face_exist(fn)
 
 
-    def get_all_faces_emb(self):
-        self.cursor.execute("""
-            SELECT * FROM faces
-        """)
-        return self.cursor.fetchall()
+
 
     def face_exist(self, fn):
-        emb = DeepFace.represent(fn)
-        for embedding in self.get_all_faces_emb():
-
-            embedding_json = json.dumps(emb[0])
-            if embedding_json == embedding[1]:
-                return True
-
-        return False
+        dfs = DeepFace.find(img_path=fn, db_path="stored_faces", enforce_detection=False)
+        print(dfs)
 
 
 

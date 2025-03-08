@@ -40,36 +40,40 @@ class FaceRecognition:
         cv2.destroyAllWindows()
 
     def save_face(self, img):
-        number = 0
         try:
             os.listdir('stored_faces')
         except FileNotFoundError:
             os.mkdir('stored_faces')
 
-
+        number = 0
         for filename in os.listdir('stored_faces'):
-            if filename:
-                filename = filename.split('.')[0]
+            if filename.startswith('face') and filename.endswith('.jpg'):
                 try:
-                    number = int(filename[4:])+1
+                    n = int(filename[4:])
+                    print(n)
+                    if n >= number:
+                        number = n + 1
+                        print(number)
                 except ValueError:
                     pass
 
         fn = 'stored_faces/face' + str(number) + '.jpg'
+        name = 'face' + str(number)
         cv2.imwrite(fn, img)
+
 
         if self.face_exist(fn):
             print('Face already exists')
         else:
 
-            embedding = DeepFace.represent(fn)
+            embedding = DeepFace.represent(fn, enforce_detection=False)
 
             embedding_json = json.dumps(embedding[0])
 
-            self.cursor.execute("""
-                INSERT INTO faces VALUES (%s, %s)
-            """, (fn, embedding_json))
-            self.conn.commit()
+            #self.cursor.execute("""
+            #    INSERT INTO faces VALUES (%s, %s)
+            #""", (name, embedding_json))
+            #self.conn.commit()
 
 
     def get_all_faces_emb(self):
@@ -79,7 +83,7 @@ class FaceRecognition:
         return self.cursor.fetchall()
 
     def face_exist(self, fn):
-        emb = DeepFace.represent(fn)
+        emb = DeepFace.represent(fn, enforce_detection=False)
         for embedding in self.get_all_faces_emb():
 
             embedding_json = json.dumps(emb[0])

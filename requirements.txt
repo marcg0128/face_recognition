@@ -1,0 +1,6 @@
+opencv-python
+imgbeddings
+psycopg2-binary
+matplotlib
+mysql-connector-python
+deepface

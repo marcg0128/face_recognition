@@ -51,10 +51,9 @@ class FaceRecognition:
             if filename:
                 filename = filename.split('.')[0]
                 try:
-                    number = int(filename[17:])
+                    number = int(filename[4:])+1
                 except ValueError:
                     pass
-        number += 1
 
         fn = 'stored_faces/face' + str(number) + '.jpg'
         cv2.imwrite(fn, img)

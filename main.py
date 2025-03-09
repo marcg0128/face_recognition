@@ -46,29 +46,23 @@ class FaceRecognition:
             os.mkdir('stored_faces')
 
         number = 0
-        for filename in os.listdir('stored_faces'):
-            if filename.startswith('face') and filename.endswith('.jpg'):
-                try:
-                    n = int(filename[4:])
-                    print(n)
-                    if n >= number:
-                        number = n + 1
-                        print(number)
-                except ValueError:
-                    pass
+        file = os.listdir('stored_faces')[-1]
+        if file:
+            number = int(file.split('.')[0].split('face')[1]) + 1
 
-        fn = 'stored_faces/face' + str(number) + '.jpg'
+        path = 'stored_faces/face' + str(number) + '.jpg'
         name = 'face' + str(number)
-        cv2.imwrite(fn, img)
+        cv2.imwrite(path, img)
 
 
-        if self.face_exist(fn):
+        if self.face_exist(path):
             print('Face already exists')
         else:
 
-            embedding = DeepFace.represent(fn, enforce_detection=False)
+            embedding = DeepFace.represent(path, enforce_detection=False, model_name='Facenet512')
 
             embedding_json = json.dumps(embedding[0])
+            print(embedding_json)
 
             #self.cursor.execute("""
             #    INSERT INTO faces VALUES (%s, %s)
@@ -83,7 +77,7 @@ class FaceRecognition:
         return self.cursor.fetchall()
 
     def face_exist(self, fn):
-        emb = DeepFace.represent(fn, enforce_detection=False)
+        emb = DeepFace.represent(fn, enforce_detection=False, model_name='Facenet512')
         for embedding in self.get_all_faces_emb():
 
             embedding_json = json.dumps(emb[0])

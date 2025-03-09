@@ -29,9 +29,13 @@ class FaceRecognition:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             faces = face_cascade.detectMultiScale(gray, 1.1, 4)
             for (x, y, w, h) in faces:
-                cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
                 roi_gray = frame[y:y+h, x:x+w]
-                self.save_face(roi_gray)
+                cv2.imwrite('temp/temp.jpg',roi_gray)
+                self.mark_face('temp/temp.jpg', frame, x, y, w, h)
+
+                if cv2.waitKey(1) & 0xFF == ord('s'):
+                    self.save_face(roi_gray)
+                    print('Face saved')
 
             cv2.imshow('frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -43,30 +47,42 @@ class FaceRecognition:
         number = 0
         try:
             os.listdir('stored_faces')
+            os.listdir('temp')
         except FileNotFoundError:
             os.mkdir('stored_faces')
+            os.mkdir('temp')
 
-
-        file = os.listdir('stored_faces')[-1]
-        print(file)
-        if file:
-            filename = file.split('.')[0]
-            try:
-                number = int(filename[4:])+1
-            except ValueError:
-                pass
+        if len(os.listdir('stored_faces')) == 0:
+            number = 0
+        else:
+            file = os.listdir('stored_faces')[-1]
+            print(file)
+            if file:
+                filename = file.split('.')[0]
+                try:
+                    number = int(filename[4:])+1
+                except ValueError:
+                    pass
 
 
         fn = 'stored_faces/face' + str(number) + '.jpg'
         cv2.imwrite(fn, img)
-        self.face_exist(fn)
 
 
 
 
-    def face_exist(self, fn):
-        dfs = DeepFace.find(img_path=fn, db_path="stored_faces", enforce_detection=False)
-        print(dfs)
+    def mark_face(self, fn, frame, x, y, w, h):
+        if len(os.listdir('stored_faces')) >= 1 :
+            dfs = DeepFace.find(img_path=fn, db_path="stored_faces", enforce_detection=False)
+            if dfs:
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (96, 201, 91), 2)
+                return True
+            else:
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                return False
+        else:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            return False
 
 
 

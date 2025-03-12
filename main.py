@@ -52,7 +52,7 @@ class FaceRecognition:
 
             for (x, y, w, h) in faces:
                 if exist:
-                    cv2.putText(frame, f"{name}: {similarity*100:.2f}%", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    cv2.putText(frame, f"{name.capitalize()}: {similarity*100:.2f}%", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
                 else:
@@ -135,7 +135,8 @@ class FaceRecognition:
             avg_embedding = self.create_avg_embedding(faces_images)
             if avg_embedding:
                 embedding_json = json.dumps(avg_embedding)
-                name = str(random.randint(0, 1000000))
+                print('---------------------------')
+                name = input("Name eingeben: ")
 
                 self.cursor.execute("""
                     INSERT INTO faces (name, embedding) VALUES (%s, %s)
@@ -171,7 +172,7 @@ class FaceRecognition:
 
             if similarity > treshold:
                 print(f'Face recognized: {id} with similarity {similarity:.2f}')
-                return True, id, similarity
+                return True, name, similarity
 
         return False, None, None
 

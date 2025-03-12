@@ -22,6 +22,14 @@ class FaceRecognition:
         )
         self.cursor = self.conn.cursor()
 
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS faces (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name TEXT NOT NULL,
+                embedding TEXT NOT NULL
+            )
+        """)
+
         if not os.path.exists('frame'):
             os.mkdir('frame')
 

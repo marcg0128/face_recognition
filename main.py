@@ -8,6 +8,8 @@ import json
 import time
 import numpy as np
 from scipy.spatial.distance import cosine
+import tkinter as tk
+from tkinter import simpledialog
 
 
 
@@ -35,6 +37,9 @@ class FaceRecognition:
 
         if not os.path.exists('temp'):
             os.mkdir('temp')
+
+        self.root = tk.Tk()
+        self.root.withdraw()  # Hauptfenster verstecken
 
 
 
@@ -135,14 +140,24 @@ class FaceRecognition:
             avg_embedding = self.create_avg_embedding(faces_images)
             if avg_embedding:
                 embedding_json = json.dumps(avg_embedding)
-                print('---------------------------')
-                name = input("Name eingeben: ")
+                name = simpledialog.askstring("Name", "Bitte gib dein Namen ein:")
+                if name:
+                    self.show_message(f'{name.capitalize()} wird gespeichert...')
 
-                self.cursor.execute("""
-                    INSERT INTO faces (name, embedding) VALUES (%s, %s)
-                """, (name, embedding_json,))
+                    self.cursor.execute("""
+                                            INSERT INTO faces (name, embedding) VALUES (%s, %s)
+                                        """, (name, embedding_json,))
 
-                self.conn.commit()
+                    self.conn.commit()
+
+                    time.sleep(2)
+                    self.clear_message()
+
+
+                else:
+                    self.show_message('Name nicht eingegeben')
+                    time.sleep(2)
+                    self.clear_message()
 
             for img in faces_images:
                 os.remove(img)
@@ -176,19 +191,19 @@ class FaceRecognition:
 
         return False, None, None
 
+    def show_message(self, message):
+        """ Zeigt eine Nachricht im Fenster an """
+        self.root.deiconify()  # Fenster sichtbar machen
+        self.label = tk.Label(self.root, text=message, font=("Arial", 12))
+        self.label.pack(pady=20)
+        self.root.update()  # UI aktualisieren
 
-
-
-
-
-
-
-
-
-
-
-
+    def clear_message(self):
+        """ Schließt das Fenster nach der Nachricht """
+        self.label.destroy()
+        self.root.withdraw()  # Fenster wieder verstecken
 
 
 recognition = FaceRecognition()
 recognition.start_camera()
+recognition.root.mainloop()

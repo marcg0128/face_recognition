@@ -28,7 +28,7 @@ class FaceRecognition:
         if not os.path.exists('temp'):
             os.mkdir('temp')
 
-        self.last_check = time.time()
+
 
     def start_camera(self):
         face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')

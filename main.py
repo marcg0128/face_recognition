@@ -7,6 +7,7 @@ from deepface import DeepFace
 import json
 import time
 import numpy as np
+from scipy.spatial.distance import cosine
 
 
 
@@ -21,8 +22,8 @@ class FaceRecognition:
         )
         self.cursor = self.conn.cursor()
 
-        if not os.path.exists('stored_faces'):
-            os.mkdir('stored_faces')
+        if not os.path.exists('frame'):
+            os.mkdir('frame')
 
         if not os.path.exists('temp'):
             os.mkdir('temp')
@@ -36,15 +37,31 @@ class FaceRecognition:
         while True:
             ret, frame = cap.read()
             faces = face_cascade.detectMultiScale(frame, 1.1, 4)
+            cv2.imwrite('frame/frame.jpg', frame)
+
+            exist, name, similarity = self.face_exist()
+
 
             for (x, y, w, h) in faces:
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                if exist:
+                    cv2.putText(frame, f"{name}: {similarity*100:.2f}%", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+                else:
+                    cv2.putText(frame, "Gesicht nicht erkannt", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+
+
 
 
             cv2.imshow('Face Recognition', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
+                print('Quitting...')
                 break
             elif cv2.waitKey(1) & 0xFF == ord('s'):
+                print('Saving Face...')
+                cv2.putText(frame, "Gesischt wird gespeichert...", (10, 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
                 self.save_face()
 
 
@@ -121,6 +138,8 @@ class FaceRecognition:
             for img in faces_images:
                 os.remove(img)
 
+        self.start_camera()
+
 
     def get_all_faces_emb(self):
         self.cursor.execute("""
@@ -129,18 +148,26 @@ class FaceRecognition:
         return self.cursor.fetchall()
 
 
-    def face_exist(self, fn):
-        pass
-        #emb = DeepFace.represent(fn, enforce_detection=False, model_name='Facenet512')
+    def face_exist(self, file_path='frame/frame.jpg', treshold=0.55):
+        emb = DeepFace.represent(file_path, enforce_detection=False, model_name='Facenet512')
 
-        #if not emb:
-        #    return False
+        if not emb:
+            return False
 
-        #for embedding in self.get_all_faces_emb():
-        #    if json.dumps(emb[0]) == embedding[1]:  # embedding[1] ist der gespeicherte JSON-Wert
-        #        return True
+        new_embedding = np.array(emb[0]['embedding'])
 
-        #return False
+        for id, name, stored_emb in self.get_all_faces_emb():
+            stored_embedding = np.array(json.loads(stored_emb))
+
+            similarity = 1 - cosine(new_embedding, stored_embedding)
+
+            if similarity > treshold:
+                print(f'Face recognized: {id} with similarity {similarity:.2f}')
+                return True, id, similarity
+
+        return False, None, None
+
+
 
 
 

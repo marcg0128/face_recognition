@@ -1,3 +1,5 @@
+import random
+
 import cv2
 import mysql.connector as mysql
 import os
@@ -27,32 +29,25 @@ class FaceRecognition:
 
         self.last_check = time.time()
 
-
-
-
     def start_camera(self):
         face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
         cap = cv2.VideoCapture(0)
 
-        while cap.isOpened():
+        while True:
             ret, frame = cap.read()
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            faces = face_cascade.detectMultiScale(frame, 1.1, 4)
 
-            if time.time() - self.last_check > 3:  # alle 3 Sekunden ein Gesicht speichern
-                for (x, y, w, h) in faces:
-                    if w * h > 10000:
-                        roi_gray = frame[y:y + h, x:x + w]
-                        self.save_face(roi_gray)
+            for (x, y, w, h) in faces:
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
-                self.last_check = time.time()
 
-            cv2.imshow('frame', frame)
+            cv2.imshow('Face Recognition', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+            elif cv2.waitKey(1) & 0xFF == ord('s'):
+                self.save_face()
 
-        cap.release()
-        cv2.destroyAllWindows()
+
 
     def capture_multiple_faces(self, samples=5):
         """
@@ -79,7 +74,6 @@ class FaceRecognition:
 
                 captured_faces.append(path)
                 print(f"Face {len(captured_faces)} captured")
-                time.sleep(1)
 
 
             cv2.imshow('Face Capture', frame)
@@ -89,12 +83,15 @@ class FaceRecognition:
         cap.release()
         cv2.destroyAllWindows()
 
+        return captured_faces
 
-    def create_avg_embedding(self, img_path, samples=5):
+
+
+    def create_avg_embedding(self, img_path):
         embeddings = []
 
-        for _ in range(samples):  # 5 Bilder analysieren
-            emb = DeepFace.represent(img_path, enforce_detection=False, model_name='Facenet512')
+        for path in img_path:  # 5 Bilder analysierenCapture multiple faces for a better analysis
+            emb = DeepFace.represent(path, enforce_detection=False, model_name='Facenet512')
             if emb:
                 embeddings.append(np.array(emb[0]['embedding']))  # Speichern als NumPy-Array
 
@@ -106,30 +103,23 @@ class FaceRecognition:
         return avg_embedding.tolist()
 
 
-    def save_face(self, img):
-        if not os.path.exists('stored_faces'):
-            os.mkdir('stored_faces')
+    def save_face(self):
+        faces_images = self.capture_multiple_faces()
 
-        files = os.listdir('stored_faces')
-        number = int(files[-1].split('.')[0].split('face')[1]) + 1 if files else 0
-
-        path = f'stored_faces/face{number}.jpg'
-
-        cv2.imwrite(path, cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-
-        if self.face_exist(path):
-            print('Face already exists')
-            os.remove(path)
-        else:
-            avg_embedding = self.create_avg_embedding(path)  # Durchschnitt berechnen
-
+        if faces_images:
+            avg_embedding = self.create_avg_embedding(faces_images)
             if avg_embedding:
                 embedding_json = json.dumps(avg_embedding)
+                name = str(random.randint(0, 1000000))
 
-                self.cursor.execute("INSERT INTO faces VALUES (%s, %s)",
-                                    (f"face{number}", embedding_json))
+                self.cursor.execute("""
+                    INSERT INTO faces (name, embedding) VALUES (%s, %s)
+                """, (name, embedding_json,))
+
                 self.conn.commit()
-                print(f"Gesicht gespeichert: {path}")
+
+            for img in faces_images:
+                os.remove(img)
 
 
     def get_all_faces_emb(self):

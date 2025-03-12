@@ -55,7 +55,39 @@ class FaceRecognition:
         cv2.destroyAllWindows()
 
     def capture_multiple_faces(self, samples=5):
-        pass
+        """
+        Capture multiple captured_faces for a better analysis
+        :param samples: Number of samples to capture
+        """
+
+        captured_faces = []
+        face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+        cap = cv2.VideoCapture(0)
+
+        while len(captured_faces) < samples:
+            ret, frame = cap.read()
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+
+            for  (x, y, w, h) in faces:
+                roi_frame = frame[y:y + h, x:x + w]
+
+
+
+                path = f'temp/face{len(captured_faces)}.jpg'
+                cv2.imwrite(path, cv2.cvtColor(roi_frame, cv2.COLOR_BGR2RGB))
+
+                captured_faces.append(path)
+                print(f"Face {len(captured_faces)} captured")
+                time.sleep(1)
+
+
+            cv2.imshow('Face Capture', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
 
 
     def create_avg_embedding(self, img_path, samples=5):

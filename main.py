@@ -54,6 +54,8 @@ class FaceRecognition:
 
             exist, name, similarity = self.face_exist()
 
+            print(faces)
+
 
             for (x, y, w, h) in faces:
                 if exist:
@@ -63,6 +65,13 @@ class FaceRecognition:
                 else:
                     cv2.putText(frame, "Gesicht nicht erkannt", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+
+
+                    if len(faces) == 1:
+                        time.sleep(2)
+                        print('Gesicht wird automatisch gespeichert...')
+                        self.save_face()
+
 
 
 

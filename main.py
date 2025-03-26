@@ -17,9 +17,9 @@ class FaceRecognition:
     def __init__(self):
         self.conn = mysql.connect(
             host="localhost",
-            port="3000",
+            port="3306",
             user="root",
-            passwd="root",
+            passwd="usbw",
             database="face_recognition"
         )
         self.cursor = self.conn.cursor()
@@ -55,7 +55,7 @@ class FaceRecognition:
             exist, name, similarity = self.face_exist()
 
 
-            for (x, y, w, h) in faces:
+            for i, (x, y, w, h) in enumerate(faces):
                 if exist:
                     cv2.putText(frame, f"{name.capitalize()}: {similarity*100:.2f}%", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -80,11 +80,6 @@ class FaceRecognition:
 
 
     def capture_multiple_faces(self, samples=5):
-        """
-        Capture multiple captured_faces for a better analysis
-        :param samples: Number of samples to capture
-        """
-
         captured_faces = []
         face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
         cap = cv2.VideoCapture(0)

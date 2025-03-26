@@ -1,5 +1,3 @@
-import random
-
 import cv2
 import mysql.connector as mysql
 import os

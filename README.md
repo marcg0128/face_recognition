@@ -9,7 +9,7 @@ or
 py -m pip install -r requirements.txt
 ```
 
-## Usage
+## Start
 1. Start your local database
 2. Create a SCHEMA name `face_recognition` with this command in your SQL console:
    
@@ -22,3 +22,8 @@ py -m pip install -r requirements.txt
    ```
    py main.py
    ```
+
+## Usage
+Press: <br>
+`s` - saving the face (**IMPORTANT!!! Currently you only can save a face when only one is visible**) <br>
+`q` - quitting the webcam

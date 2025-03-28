@@ -50,16 +50,24 @@ class FaceRecognition:
             faces = face_cascade.detectMultiScale(frame, 1.1, 4)
             cv2.imwrite('frame/frame.jpg', frame)
 
+            enum_faces = enumerate(faces)
 
 
-            for i, (x, y, w, h) in enumerate(faces):
+            for i, (x, y, w, h) in enum_faces:
                 roi_frame = frame[y:y + h, x:x + w]
                 
                 cv2.imwrite(f'temp-live-faces/face{i}.jpg', cv2.cvtColor(roi_frame, cv2.COLOR_BGR2RGB))
                 
                 
-            for file in os.listdir('temp-live-faces'):
+            for file in os.listdir('temp-live-faces'):                   
                 exist, name, similarity = self.face_exist(file_path=f'temp-live-faces/{file}')
+                
+                id = int(file.split('.')[0].split('/')[1].split('face')[1])
+                try:
+                    x, y, w, h = enum_faces[id][1]
+                except:
+                    os.remove(f'temp-live-faces/{file}')
+                    continue
                  
                 if exist:
                     cv2.putText(frame, f"{name.capitalize()}: {similarity*100:.2f}%", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)

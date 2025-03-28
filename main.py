@@ -50,10 +50,17 @@ class FaceRecognition:
             faces = face_cascade.detectMultiScale(frame, 1.1, 4)
             cv2.imwrite('frame/frame.jpg', frame)
 
-            exist, name, similarity = self.face_exist()
 
 
             for i, (x, y, w, h) in enumerate(faces):
+                roi_frame = frame[y:y + h, x:x + w]
+                
+                cv2.imwrite(f'temp-live-faces/face{i}.jpg', cv2.cvtColor(roi_frame, cv2.COLOR_BGR2RGB))
+                
+                
+            for file in os.listdir('temp-live-faces'):
+                exist, name, similarity = self.face_exist(file_path=f'temp-live-faces/{file}')
+                 
                 if exist:
                     cv2.putText(frame, f"{name.capitalize()}: {similarity*100:.2f}%", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -61,6 +68,7 @@ class FaceRecognition:
                 else:
                     cv2.putText(frame, "Gesicht nicht erkannt", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                    
 
 
 
@@ -165,7 +173,7 @@ class FaceRecognition:
         return self.cursor.fetchall()
 
 
-    def face_exist(self, file_path='frame/frame.jpg', treshold=0.55):
+    def face_exist(self, file_path, treshold=0.55):
         emb = DeepFace.represent(file_path, enforce_detection=False, model_name='Facenet512')
 
         if not emb:

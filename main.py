@@ -1,7 +1,5 @@
-import random
-
 import cv2
-import mysql.connector as mysql
+import sqlite3
 import os
 from deepface import DeepFace
 import json
@@ -15,13 +13,7 @@ from tkinter import simpledialog
 
 class FaceRecognition:
     def __init__(self):
-        self.conn = mysql.connect(
-            host="localhost",
-            port="3000",
-            user="root",
-            passwd="root",
-            database="face_recognition"
-        )
+        self.conn = sqlite3.connect("./database.sqlite", check_same_thread=False)
         self.cursor = self.conn.cursor()
 
         self.cursor.execute("""
@@ -50,41 +42,33 @@ class FaceRecognition:
         while True:
             ret, frame = cap.read()
             faces = face_cascade.detectMultiScale(frame, 1.1, 4)
-            cv2.imwrite('frame/frame.jpg', frame)
-
-            exist, name, similarity = self.face_exist()
-
 
             for (x, y, w, h) in faces:
-                if exist:
-                    cv2.putText(frame, f"{name.capitalize()}: {similarity*100:.2f}%", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                roi_face = frame[y:y + h, x:x + w]
+                temp_face_path = "temp/temp_face.jpg"
+                cv2.imwrite(temp_face_path, roi_face)
 
+                exist, name, similarity = self.face_exist(temp_face_path)
+
+                if exist:
+                    cv2.putText(frame, f"{name.capitalize()}: {similarity * 100:.2f}%", (x, y - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 else:
-                    cv2.putText(frame, "Gesicht nicht erkannt", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    cv2.putText(frame, "Unbekannt", (x, y - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
 
-
-
-
             cv2.imshow('Face Recognition', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                print('Quitting...')
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
                 break
-            elif cv2.waitKey(1) & 0xFF == ord('s'):
-                print('Saving Face...')
-                cv2.putText(frame, "Gesischt wird gespeichert...", (10, 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-
+            elif key == ord('s'):
                 self.save_face()
 
 
 
     def capture_multiple_faces(self, samples=5):
-        """
-        Capture multiple captured_faces for a better analysis
-        :param samples: Number of samples to capture
-        """
-
         captured_faces = []
         face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
         cap = cv2.VideoCapture(0)
@@ -145,7 +129,7 @@ class FaceRecognition:
                     self.show_message(f'{name.capitalize()} wird gespeichert...')
 
                     self.cursor.execute("""
-                                            INSERT INTO faces (name, embedding) VALUES (%s, %s)
+                                            INSERT INTO faces (name, embedding) VALUES (?, ?)
                                         """, (name, embedding_json,))
 
                     self.conn.commit()
@@ -172,7 +156,7 @@ class FaceRecognition:
         return self.cursor.fetchall()
 
 
-    def face_exist(self, file_path='frame/frame.jpg', treshold=0.55):
+    def face_exist(self, file_path, threshold=0.55):
         emb = DeepFace.represent(file_path, enforce_detection=False, model_name='Facenet512')
 
         if not emb:

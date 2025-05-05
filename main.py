@@ -156,7 +156,7 @@ class FaceRecognition:
         return self.cursor.fetchall()
 
 
-    def face_exist(self, file_path, treshold=0.55):
+    def face_exist(self, file_path, threshold=0.55):
         emb = DeepFace.represent(file_path, enforce_detection=False, model_name='Facenet512')
 
         if not emb:

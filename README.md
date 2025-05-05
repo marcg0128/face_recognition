@@ -10,12 +10,8 @@ py -m pip install -r requirements.txt
 ```
 
 ## Start
-1. Start your local database
-2. Create a SCHEMA name `face_recognition` with this command in your SQL console:
-   
-   ```
-   CREATE SCHEMA face_recognition;
-   ```
+1. Ensure that the application has write access to the current directory.
+2. The application uses a local SQLite database stored in `./database.sqlite`. No manual schema creation is required, as the database will be initialized automatically when the application runs.
 3. Plug a webcam in your device
 4. Start the code with:
 

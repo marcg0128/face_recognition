@@ -1,5 +1,5 @@
 import cv2
-import mysql.connector as mysql
+import sqlite3
 import os
 from deepface import DeepFace
 import json
@@ -13,13 +13,7 @@ from tkinter import simpledialog
 
 class FaceRecognition:
     def __init__(self):
-        self.conn = mysql.connect(
-            host="localhost",
-            port="3306",
-            user="root",
-            passwd="usbw",
-            database="face_recognition"
-        )
+        self.conn = sqlite3.connect("./database.sqlite", check_same_thread=False)
         self.cursor = self.conn.cursor()
 
         self.cursor.execute("""
@@ -48,47 +42,28 @@ class FaceRecognition:
         while True:
             ret, frame = cap.read()
             faces = face_cascade.detectMultiScale(frame, 1.1, 4)
-            cv2.imwrite('frame/frame.jpg', frame)
 
-            enum_faces = enumerate(faces)
+            for (x, y, w, h) in faces:
+                roi_face = frame[y:y + h, x:x + w]
+                temp_face_path = "temp/temp_face.jpg"
+                cv2.imwrite(temp_face_path, roi_face)
 
+                exist, name, similarity = self.face_exist(temp_face_path)
 
-            for i, (x, y, w, h) in enum_faces:
-                roi_frame = frame[y:y + h, x:x + w]
-                
-                cv2.imwrite(f'temp-live-faces/face{i}.jpg', cv2.cvtColor(roi_frame, cv2.COLOR_BGR2RGB))
-                
-                
-            for file in os.listdir('temp-live-faces'):                   
-                exist, name, similarity = self.face_exist(file_path=f'temp-live-faces/{file}')
-                
-                id = int(file.split('.')[0].split('/')[1].split('face')[1])
-                try:
-                    x, y, w, h = enum_faces[id][1]
-                except:
-                    os.remove(f'temp-live-faces/{file}')
-                    continue
-                 
                 if exist:
-                    cv2.putText(frame, f"{name.capitalize()}: {similarity*100:.2f}%", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    cv2.putText(frame, f"{name.capitalize()}: {similarity * 100:.2f}%", (x, y - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
                 else:
-                    cv2.putText(frame, "Gesicht nicht erkannt", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    cv2.putText(frame, "Unbekannt", (x, y - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                    
-
-
-
 
             cv2.imshow('Face Recognition', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                print('Quitting...')
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
                 break
-            elif cv2.waitKey(1) & 0xFF == ord('s'):
-                print('Saving Face...')
-                cv2.putText(frame, "Gesischt wird gespeichert...", (10, 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-
+            elif key == ord('s'):
                 self.save_face()
 
 
@@ -154,7 +129,7 @@ class FaceRecognition:
                     self.show_message(f'{name.capitalize()} wird gespeichert...')
 
                     self.cursor.execute("""
-                                            INSERT INTO faces (name, embedding) VALUES (%s, %s)
+                                            INSERT INTO faces (name, embedding) VALUES (?, ?)
                                         """, (name, embedding_json,))
 
                     self.conn.commit()
